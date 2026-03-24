@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BikeRide — Edit Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+    <style>
+        /* ── RESET ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+          --navy:        #0d1b2a;
+          --navy-card:   #0f2035;
+          --field-bg:    #1a2e45;
+          --field-lock:  #162233;
+          --teal:        #00f5d4;
+          --teal-dim:    rgba(0,245,212,.14);
+          --teal-glow:   rgba(0,245,212,.40);
+          --cyan:        #00d9ff;
+          --amber:       #f59e0b;
+          --amber-light: #fbbf24;
+          --amber-dim:   rgba(245,158,11,.16);
+          --amber-glow:  rgba(245,158,11,.40);
+          --gold:        #f5b800;
+          --gold-dim:    rgba(245,184,0,.18);
+          --silver:      #b0c4d8;
+          --silver-dim:  rgba(176,196,216,.18);
+          --blue:        #3b9eff;
+          --blue-dim:    rgba(59,158,255,.18);
+          --red:         #ff4f6a;
+          --red-dim:     rgba(255,79,106,.16);
+          --white:       #e8f4f8;
+          --muted:       #5a7d99;
+          --border:      rgba(0,245,212,.18);
+          --border-amber:rgba(245,158,11,.30);
+          --glass:       rgba(13,27,42,.68);
+          --font-head:   'Syne', sans-serif;
+          --font-body:   'DM Sans', sans-serif;
+          --radius:      14px;
+        }
+
+        html, body {
+          min-height: 100vh;
+          background: var(--navy);
+          font-family: var(--font-body);
+          color: var(--white);
+          overflow-x: hidden;
+        }
+
+        /* ── CANVAS ── */
+        #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+        /* ── MESH ── */
+        .mesh {
+          position: fixed; inset: 0; z-index: 1; pointer-events: none;
+          background:
+            radial-gradient(ellipse 55% 45% at 12% 18%,  rgba(245,158,11,.05)  0%, transparent 70%),
+            radial-gradient(ellipse 45% 55% at 88% 82%,  rgba(0,217,255,.04)   0%, transparent 70%),
+            radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(245,158,11,.025) 0%, transparent 60%);
+          animation: meshDrift 22s ease-in-out infinite alternate;
+        }
+        @keyframes meshDrift {
+          0%   { transform: scale(1)    translate(0,0); }
+          50%  { transform: scale(1.03) translate(-1%,.8%); }
+          100% { transform: scale(.97)  translate(1%,-.5%); }
+        }
+
+        /* ── PAGE ── */
+        .page {
+          position: relative; z-index: 2;
+          min-height: 100vh;
+          display: flex; flex-direction: column;
+          animation: pageFade .7s cubic-bezier(.22,.61,.36,1) both;
+        }
+        @keyframes pageFade {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ══════════════════════════════════
+           NAV
+        ══════════════════════════════════ */
+        .nav-outer {
+          position: sticky; top: 0; z-index: 50;
+          background: rgba(11,22,35,.72);
+          backdrop-filter: blur(20px) saturate(150%);
+          -webkit-backdrop-filter: blur(20px) saturate(150%);
+          border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+          max-width: 860px; margin: 0 auto;
+          padding: 15px 32px;
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+          display: flex; align-items: center; gap: 10px;
+          font-family: var(--font-head); font-weight: 800; font-size: 1.22rem;
+          color: var(--teal); text-decoration: none; letter-spacing: -.01em;
+          text-shadow: 0 0 12px var(--teal-glow), 0 0 28px rgba(0,245,212,.18);
+        }
+        .logo-icon { font-size: 1.4rem; filter: drop-shadow(0 0 8px var(--teal-glow)); }
+
+        /* Back button — ghost, left-arrow slides on hover */
+        .btn-back {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 9px 20px;
+          background: transparent;
+          border: 1.5px solid rgba(255,255,255,.14);
+          border-radius: 999px;
+          color: var(--muted);
+          font-family: var(--font-body); font-weight: 500; font-size: .875rem;
+          cursor: pointer; text-decoration: none;
+          transition: border-color .22s, color .22s, background .22s, transform .18s;
+        }
+        .btn-back .arrow {
+          display: inline-block;
+          transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+        }
+        .btn-back:hover {
+          border-color: rgba(255,255,255,.3);
+          color: var(--white);
+          background: rgba(255,255,255,.05);
+        }
+        .btn-back:hover .arrow { transform: translateX(-5px); }
+
+        /* ══════════════════════════════════
+           BREADCRUMB
+        ══════════════════════════════════ */
+        .breadcrumb-wrap {
+          max-width: 860px; margin: 0 auto;
+          padding: 18px 32px 0;
+          display: flex; align-items: center; gap: 0;
+        }
+        .bc-item {
+          font-size: .78rem; font-weight: 400; color: var(--muted);
+          animation: bcFade .4s both;
+          white-space: nowrap;
+        }
+        .bc-item.active { color: var(--amber); font-weight: 500; }
+        .bc-item:nth-child(1) { animation-delay: .25s; }
+        .bc-item:nth-child(2) { animation-delay: .32s; }
+        .bc-item:nth-child(3) { animation-delay: .39s; }
+        .bc-item:nth-child(4) { animation-delay: .46s; }
+        .bc-item:nth-child(5) { animation-delay: .53s; }
+        @keyframes bcFade {
+          from { opacity:0; transform: translateX(-6px); }
+          to   { opacity:1; transform: translateX(0); }
+        }
+
+        .bc-chevron {
+          font-size: .65rem; margin: 0 8px; color: var(--teal);
+          display: inline-block;
+          animation: chevronBounce .5s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        .bc-chevron:nth-of-type(1) { animation-delay: .28s; }
+        .bc-chevron:nth-of-type(2) { animation-delay: .42s; }
+        @keyframes chevronBounce {
+          0%   { opacity:0; transform: scale(0) translateX(-4px); }
+          60%  { transform: scale(1.3) translateX(2px); }
+          100% { opacity:1; transform: scale(1) translateX(0); }
+        }
+
+        /* ══════════════════════════════════
+           MAIN / CARD
+        ══════════════════════════════════ */
+        .main {
+          max-width: 860px; margin: 0 auto; width: 100%;
+          padding: 32px 32px 72px;
+        }
+
+        .card {
+          position: relative;
+          background: var(--glass);
+          backdrop-filter: blur(22px) saturate(130%);
+          -webkit-backdrop-filter: blur(22px) saturate(130%);
+          border-radius: 24px;
+          padding: 46px 46px 40px;
+          border: 1px solid transparent;
+          background-clip: padding-box;
+          animation: slideUp .65s .1s cubic-bezier(.22,.61,.36,1) both;
+        }
+        /* Amber gradient border */
+        .card::before {
+          content: '';
+          position: absolute; inset: -1px;
+          border-radius: 25px;
+          background: linear-gradient(135deg,
+            rgba(245,158,11,.60) 0%,
+            rgba(251,191,36,.22) 28%,
+            rgba(245,158,11,.08) 58%,
+            rgba(251,191,36,.45) 100%
+          );
+          z-index: -1;
+          animation: amberGlow 5s ease-in-out infinite alternate;
+        }
+        @keyframes amberGlow {
+          0%   { opacity: .7; }
+          100% { opacity: 1;  }
+        }
+        /* Outer ambient glow */
+        .card::after {
+          content: '';
+          position: absolute; inset: -24px;
+          border-radius: 38px;
+          background: radial-gradient(ellipse 80% 60% at 50% 50%,
+            rgba(245,158,11,.06) 0%, transparent 70%);
+          z-index: -2; pointer-events: none;
+        }
+
+        @keyframes slideUp {
+          from { opacity:0; transform: translateY(36px) scale(.98); }
+          to   { opacity:1; transform: translateY(0)    scale(1);   }
+        }
+
+        /* ── CARD TITLE ── */
+        .card-header {
+          display: flex; align-items: center; gap: 12px;
+          margin-bottom: 6px;
+        }
+        .card-title {
+          font-family: var(--font-head); font-weight: 800; font-size: 1.9rem;
+          color: var(--white); letter-spacing: -.025em; line-height: 1;
+        }
+        .pencil-icon {
+          font-size: 1.4rem;
+          display: inline-block;
+          animation: pencilWiggle .6s .55s cubic-bezier(.34,1.56,.64,1) both;
+          transform-origin: bottom left;
+        }
+        @keyframes pencilWiggle {
+          0%   { transform: rotate(-20deg) scale(.7); opacity:0; }
+          60%  { transform: rotate(8deg)  scale(1.1); opacity:1; }
+          100% { transform: rotate(0deg)  scale(1);   opacity:1; }
+        }
+        .card-subtitle { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 6px; }
+
+        /* Amber underline draw-in */
+        .title-underline {
+          display: block; height: 2.5px; width: 100%;
+          background: linear-gradient(90deg, var(--amber), var(--amber-light));
+          border-radius: 2px; margin-bottom: 30px;
+          transform-origin: left;
+          animation: drawLine .75s .38s cubic-bezier(.22,.61,.36,1) both;
+          box-shadow: 0 0 10px var(--amber-glow);
+        }
+        @keyframes drawLine {
+          from { transform: scaleX(0); opacity:0; }
+          to   { transform: scaleX(1); opacity:1; }
+        }
+
+        /* ══════════════════════════════════
+           FORM
+        ══════════════════════════════════ */
+        form { display: flex; flex-direction: column; gap: 22px; }
+
+        /* Field stagger */
+        .field-wrap {
+          position: relative;
+          animation: fieldReveal .5s both;
+        }
+        .field-wrap:nth-child(1) { animation-delay: .32s; }
+        .field-wrap:nth-child(2) { animation-delay: .41s; }
+        .field-wrap:nth-child(3) { animation-delay: .50s; }
+        .field-wrap:nth-child(4) { animation-delay: .59s; }
+        .field-wrap:nth-child(5) { animation-delay: .68s; }
+
+        @keyframes fieldReveal {
+          from { opacity:0; transform: translateY(14px); }
+          to   { opacity:1; transform: translateY(0); }
+        }
+
+        /* ── FLOATING LABEL ── */
+        .field-wrap label {
+          position: absolute;
+          left: 16px; top: 50%; transform: translateY(-50%);
+          font-size: .9rem; color: var(--muted); font-weight: 400;
+          pointer-events: none;
+          transition: top .22s, transform .22s, font-size .22s, color .22s, background .22s;
+          padding: 0 4px; z-index: 2;
+          background: transparent;
+        }
+        .field-wrap input:focus ~ label,
+        .field-wrap input:not(:placeholder-shown) ~ label,
+        .field-wrap select:focus ~ label,
+        .field-wrap select.has-value ~ label {
+          top: 0; transform: translateY(-50%);
+          font-size: .72rem; color: var(--teal);
+          background: var(--navy-card);
+          border-radius: 4px;
+        }
+
+        /* ── BASE INPUT ── */
+        .field-wrap input,
+        .field-wrap select {
+          width: 100%; padding: 16px 16px 8px;
+          background: var(--field-bg);
+          border: 1.5px solid rgba(0,245,212,.18);
+          border-radius: var(--radius);
+          color: var(--white);
+          font-family: var(--font-body); font-size: .95rem; font-weight: 400;
+          outline: none;
+          transition: border-color .22s, box-shadow .22s, background .22s;
+          appearance: none; -webkit-appearance: none;
+        }
+        .field-wrap input::placeholder { color: transparent; }
+        .field-wrap input:focus,
+        .field-wrap select:focus {
+          border-color: var(--teal);
+          box-shadow: 0 0 0 3px rgba(0,245,212,.10), 0 0 20px rgba(0,245,212,.12);
+          background: #1e364f;
+        }
+
+        /* ── LOCKED USER ID FIELD ── */
+        .field-lock-wrap { position: relative; }
+        .field-lock-wrap input {
+          background: var(--field-lock);
+          border-color: rgba(255,255,255,.1);
+          color: var(--muted);
+          cursor: not-allowed;
+          letter-spacing: .04em;
+          padding-right: 48px;
+        }
+        .field-lock-wrap input:focus {
+          border-color: rgba(255,255,255,.15);
+          box-shadow: none;
+          background: var(--field-lock);
+        }
+        .field-lock-wrap label { color: rgba(255,255,255,.3); }
+        .field-lock-wrap input:focus ~ label,
+        .field-lock-wrap input:not(:placeholder-shown) ~ label {
+          color: rgba(255,255,255,.35);
+          background: var(--navy-card);
+        }
+
+        /* Lock icon */
+        .lock-icon {
+          position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+          font-size: 1rem; color: var(--muted); pointer-events: none;
+          opacity: .55; z-index: 3;
+        }
+
+        /* Tooltip */
+        .lock-tooltip-wrap { position: relative; display: block; }
+        .lock-tooltip-wrap:hover .tooltip { opacity: 1; transform: translateY(-4px); pointer-events: auto; }
+        .tooltip {
+          position: absolute; right: 0; bottom: calc(100% + 10px);
+          background: rgba(15,32,53,.95);
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 8px;
+          padding: 7px 13px;
+          font-size: .75rem; color: var(--silver); white-space: nowrap;
+          opacity: 0; transform: translateY(4px);
+          transition: opacity .22s, transform .22s;
+          pointer-events: none;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 8px 24px rgba(0,0,0,.4);
+        }
+        .tooltip::after {
+          content: '';
+          position: absolute; bottom: -5px; right: 18px;
+          width: 8px; height: 8px;
+          background: rgba(15,32,53,.95);
+          border-right: 1px solid rgba(255,255,255,.12);
+          border-bottom: 1px solid rgba(255,255,255,.12);
+          transform: rotate(45deg);
+        }
+
+        /* ── SELECT ── */
+        .select-wrap { position: relative; }
+        .select-wrap::after {
+          content: '';
+          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+          width: 0; height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 6px solid var(--teal);
+          pointer-events: none;
+          filter: drop-shadow(0 0 4px var(--teal-glow));
+        }
+        select option { background: #0f2035; color: var(--white); }
+        .mem-options-hint {
+          display: flex; gap: 12px; margin-top: 6px; padding-left: 4px;
+        }
+        .mem-dot {
+          display: flex; align-items: center; gap: 5px;
+          font-size: .72rem; color: var(--muted); font-weight: 300;
+        }
+        .mem-dot span { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .dot-basic  { background: var(--blue); }
+        .dot-silver { background: var(--silver); }
+        .dot-gold   { background: var(--gold); box-shadow: 0 0 5px rgba(245,184,0,.5); }
+
+        /* ── BUTTON ROW ── */
+        .btn-row {
+          display: flex; gap: 14px; margin-top: 8px;
+          animation: fieldReveal .5s .78s both;
+        }
+
+        /* Update — amber gradient */
+        .btn-update {
+          flex: 1; position: relative; overflow: hidden;
+          padding: 15px 24px;
+          background: linear-gradient(120deg, var(--amber) 0%, var(--amber-light) 100%);
+          border: none; border-radius: var(--radius);
+          color: #0d1b2a;
+          font-family: var(--font-head); font-weight: 700; font-size: .95rem;
+          letter-spacing: .03em; cursor: pointer;
+          box-shadow: 0 0 22px var(--amber-glow), 0 4px 16px rgba(0,0,0,.3);
+          transition: box-shadow .25s, transform .18s, filter .2s;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+        }
+        .btn-update:hover {
+          box-shadow: 0 0 36px rgba(245,158,11,.55), 0 6px 24px rgba(0,0,0,.3);
+          transform: scale(1.03) translateY(-2px);
+          filter: brightness(1.06);
+        }
+        .btn-update:active { transform: scale(.99); filter: brightness(.96); }
+
+        /* Cancel — ghost */
+        .btn-cancel {
+          padding: 15px 24px;
+          background: transparent;
+          border: 1.5px solid rgba(255,255,255,.16);
+          border-radius: var(--radius);
+          color: var(--muted);
+          font-family: var(--font-body); font-weight: 500; font-size: .9rem;
+          cursor: pointer; text-decoration: none;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+          transition: background .22s, border-color .22s, color .22s, opacity .22s;
+          white-space: nowrap;
+        }
+        .btn-cancel:hover {
+          background: rgba(255,255,255,.05);
+          border-color: rgba(255,255,255,.28);
+          color: var(--white);
+          opacity: .8;
+        }
+
+        /* Ripple */
+        .ripple {
+          position: absolute; border-radius: 50%;
+          background: rgba(255,255,255,.3);
+          transform: scale(0);
+          animation: rippleAnim .55s linear;
+          pointer-events: none;
+        }
+        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+        /* ── ERROR BANNER ── */
+        .error-banner {
+          display: none; margin-bottom: 6px;
+          padding: 13px 18px;
+          background: rgba(255,79,106,.12);
+          border: 1px solid rgba(255,79,106,.32);
+          border-radius: var(--radius);
+          backdrop-filter: blur(8px);
+          color: #ff8fa3; font-size: .875rem; font-weight: 400;
+        }
+        .error-banner.show {
+          display: flex; align-items: center; gap: 10px;
+          animation: shake .45s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+          10%,90% { transform: translateX(-3px); }
+          20%,80% { transform: translateX(4px);  }
+          30%,50%,70% { transform: translateX(-4px); }
+          40%,60% { transform: translateX(4px);  }
+          100%    { transform: translateX(0); }
+        }
+
+        /* ── SUCCESS OVERLAY ── */
+        .success-overlay {
+          display: none; position: absolute; inset: 0;
+          border-radius: 24px;
+          background: rgba(13,27,42,.88);
+          backdrop-filter: blur(8px);
+          flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+          z-index: 5;
+        }
+        .success-overlay.show { display: flex; animation: fadeIn .4s ease both; }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        .success-icon {
+          font-size: 3.4rem;
+          filter: drop-shadow(0 0 18px var(--amber-glow));
+          animation: popIn .5s .1s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        @keyframes popIn {
+          from { transform: scale(0); opacity:0; }
+          to   { transform: scale(1); opacity:1; }
+        }
+        .success-msg {
+          font-family: var(--font-head); font-size: 1.35rem; font-weight: 700;
+          color: var(--amber-light); text-shadow: 0 0 14px var(--amber-glow);
+        }
+        .success-sub { font-size: .875rem; color: var(--muted); font-weight: 300; }
+
+        /* ── THYMELEAF SERVER ERROR ── */
+        .server-error {
+          margin-bottom: 6px;
+          padding: 13px 18px;
+          background: rgba(255,0,0,.1);
+          border: 1px solid rgba(255,68,68,.35);
+          border-radius: var(--radius);
+          color: #ff8fa3; font-size: .875rem; text-align: center;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 620px) {
+          .card { padding: 30px 20px 28px; }
+          .main { padding: 24px 16px 56px; }
+          .nav-inner { padding: 13px 18px; }
+          .breadcrumb-wrap { padding: 14px 18px 0; }
+          .card-title { font-size: 1.55rem; }
+          .btn-row { flex-direction: column; }
+          .btn-cancel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="mesh"></div>
+
+<!-- ══════════ NAV ══════════ -->
+<div class="nav-outer">
+    <div class="nav-inner">
+        <a href="#" class="logo" th:href="@{/users/list}">
+            <span class="logo-icon">🚲</span>BikeRide
+        </a>
+        <a href="#" class="btn-back" th:href="@{/users/list}">
+            <span class="arrow">←</span> Back to List
+        </a>
+    </div>
+</div>
+
+<!-- ══════════ PAGE ══════════ -->
+<div class="page">
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb-wrap">
+        <span class="bc-item">Home</span>
+        <span class="bc-chevron">❯</span>
+        <span class="bc-item">Users</span>
+        <span class="bc-chevron">❯</span>
+        <span class="bc-item active">Edit Profile</span>
+    </div>
+
+    <!-- MAIN -->
+    <main class="main">
+        <div class="card" id="card">
+
+            <!-- SUCCESS OVERLAY -->
+            <div class="success-overlay" id="successOverlay">
+                <div class="success-icon">✅</div>
+                <div class="success-msg">Profile Updated!</div>
+                <div class="success-sub">Changes saved successfully. Redirecting…</div>
+            </div>
+
+            <!-- CARD HEADER -->
+            <div class="card-header">
+                <h1 class="card-title">Edit Profile</h1>
+                <span class="pencil-icon">✏️</span>
+            </div>
+            <p class="card-subtitle">Update rider details below. Fields marked with a lock cannot be changed.</p>
+            <span class="title-underline"></span>
+
+            <!-- SERVER ERROR (Thymeleaf) -->
+            <div th:if="${error}"
+                 th:text="${error}"
+                 class="server-error"></div>
+
+            <!-- CLIENT ERROR -->
+            <div class="error-banner" id="errorBanner">
+                <span>⚠️</span>
+                <span id="errorText">Please fill in all required fields.</span>
+            </div>
+
+            <!-- FORM -->
+            <form id="editForm" novalidate
+                  th:action="@{/users/edit}" method="post"
+                  th:object="${user}">
+
+                <!-- Hidden field — sends userId to controller so it knows which record to update -->
+                <input type="hidden" th:field="*{userId}">
+
+                <!-- USER ID — locked -->
+                <div class="field-wrap field-lock-wrap">
+                    <div class="lock-tooltip-wrap">
+                        <input type="text" id="userId" name="userId"
+                               placeholder=" " readonly
+                               th:field="*{userId}" />
+                        <label for="userId">User ID</label>
+                        <span class="lock-icon">🔒</span>
+                        <span class="tooltip">ID cannot be changed</span>
+                    </div>
+                </div>
+
+                <!-- FULL NAME -->
+                <div class="field-wrap">
+                    <input type="text" id="fullName" name="name"
+                           placeholder=" " autocomplete="name"
+                           th:field="*{name}" />
+                    <label for="fullName">Full Name</label>
+                </div>
+
+                <!-- EMAIL -->
+                <div class="field-wrap">
+                    <input type="email" id="email" name="email"
+                           placeholder=" " autocomplete="email"
+                           th:field="*{email}" />
+                    <label for="email">Email Address</label>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="field-wrap">
+                    <input type="password" id="password" name="password"
+                           placeholder=" " autocomplete="new-password"
+                           th:field="*{password}" />
+                    <label for="password">Password</label>
+                </div>
+
+                <!-- MEMBERSHIP TYPE -->
+                <div class="field-wrap select-wrap">
+                    <select id="membership" name="membershipType"
+                            th:field="*{membershipType}">
+                        <option value="" disabled>Select membership</option>
+                        <option value="basic">🔵 Basic</option>
+                        <option value="silver">⚪ Silver</option>
+                        <option value="gold">🟡 Gold</option>
+                    </select>
+                    <label for="membership">Membership Type</label>
+                    <div class="mem-options-hint">
+                        <span class="mem-dot"><span class="dot-basic"></span>Basic</span>
+                        <span class="mem-dot"><span class="dot-silver"></span>Silver</span>
+                        <span class="mem-dot"><span class="dot-gold"></span>Gold</span>
+                    </div>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="btn-row">
+                    <button type="submit" class="btn-update" id="updateBtn">
+                        💾 Update User
+                    </button>
+                    <a th:href="@{/users/list}" class="btn-cancel">
+                        ✕ Cancel
+                    </a>
+                </div>
+
+            </form>
+        </div><!-- /.card -->
+    </main>
+</div><!-- /.page -->
+
+<!-- ══════════ CANVAS + JS ══════════ -->
+<script>
+    /* ── PARTICLE CANVAS ── */
+    (function(){
+      const c   = document.getElementById('bg-canvas');
+      const ctx = c.getContext('2d');
+      let W, H, pts = [];
+      const N = 45;
+      const resize = () => { W = c.width = innerWidth; H = c.height = innerHeight; };
+      resize(); addEventListener('resize', resize);
+      const r = (a,b) => Math.random()*(b-a)+a;
+
+      class P {
+        constructor(init){ this.reset(init); }
+        reset(init){
+          this.x = r(0,W); this.y = init ? r(0,H) : H+8;
+          this.radius = r(.7,2.2); this.vy = r(.1,.3); this.vx = r(-.1,.1);
+          this.o = r(.12,.45);
+          /* amber-ish tint mixed with teal to match edit theme */
+          this.col = Math.random() > .65 ? '245,158,11' : '0,245,212';
+        }
+        step(){ this.y -= this.vy; this.x += this.vx; if(this.y < -8) this.reset(false); }
+        draw(){
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+          ctx.fillStyle = `rgba(${this.col},${this.o})`;
+          ctx.fill();
+        }
+      }
+
+      for(let i = 0; i < N; i++) pts.push(new P(true));
+
+      const loop = () => {
+        ctx.clearRect(0,0,W,H);
+        for(let i = 0; i < pts.length; i++){
+          for(let j = i+1; j < pts.length; j++){
+            const dx = pts[i].x-pts[j].x, dy = pts[i].y-pts[j].y;
+            const d = Math.hypot(dx,dy);
+            if(d < 110){
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(245,158,11,${.04*(1-d/110)})`;
+              ctx.lineWidth = .4;
+              ctx.moveTo(pts[i].x, pts[i].y);
+              ctx.lineTo(pts[j].x, pts[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        pts.forEach(p => { p.step(); p.draw(); });
+        requestAnimationFrame(loop);
+      };
+      loop();
+    })();
+
+    /* ── SELECT: floating label ── */
+    const sel = document.getElementById('membership');
+    function syncSelect(){
+      sel.value ? sel.classList.add('has-value') : sel.classList.remove('has-value');
+    }
+    sel.addEventListener('change', syncSelect);
+    syncSelect(); // on load if pre-filled by Thymeleaf
+
+    /* ── RIPPLE ── */
+    document.getElementById('updateBtn').addEventListener('click', function(e){
+      const btn = this;
+      const circle = document.createElement('span');
+      const d = Math.max(btn.clientWidth, btn.clientHeight);
+      const rect = btn.getBoundingClientRect();
+      circle.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-rect.left-d/2}px;top:${e.clientY-rect.top-d/2}px;`;
+      circle.className = 'ripple';
+      btn.appendChild(circle);
+      setTimeout(() => circle.remove(), 600);
+    });
+
+    /* ── VALIDATION ── */
+    const form   = document.getElementById('editForm');
+    const errBnr = document.getElementById('errorBanner');
+    const errTxt = document.getElementById('errorText');
+
+    function showError(msg){
+      errTxt.textContent = msg;
+      errBnr.classList.remove('show');
+      void errBnr.offsetWidth;
+      errBnr.classList.add('show');
+      errBnr.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+
+    form.addEventListener('submit', function(e){
+      const name = document.getElementById('fullName').value.trim();
+      const mail = document.getElementById('email').value.trim();
+      const pass = document.getElementById('password').value;
+      const mem  = sel.value;
+
+      if(!name || !mail || !pass || !mem){
+        e.preventDefault(); showError('Please fill in all required fields.'); return;
+      }
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){
+        e.preventDefault(); showError('Please enter a valid email address.'); return;
+      }
+      if(pass.length < 6){
+        e.preventDefault(); showError('Password must be at least 6 characters.'); return;
+      }
+
+      /* Visual feedback while submitting */
+      const btn = document.getElementById('updateBtn');
+      btn.textContent = 'Saving…';
+      btn.disabled = true;
+      btn.style.opacity = '.75';
+    });
+</script>
+</body>
+</html>
